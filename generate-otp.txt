@@ -1,0 +1,93 @@
+>>>ON CLICK GENERATE OTP
+
+
+>>HTML
+<td>
+    <form action="" method="post">
+        {% csrf_token %}
+        <button type="button" class="btn btn-warning btn-sm btn-click" data-sid="{{delivery_agent.id}}"><i data-feather="key"></i> Generate OTP</button>
+    </form>
+</td>
+
+
+>>JS
+<script>
+$(document).ready(function() {
+    $(".btn-click").click(function() {
+        var csr = $("input[name=csrfmiddlewaretoken]").val(),
+            agent_id = $(this).attr("data-sid"),
+            mydata = {
+                csrfmiddlewaretoken: csr,
+                agent_id : agent_id,
+            };
+        $.ajax({
+            url: "{% url 'otp_delivery_agent' %}",
+            method: "POST",
+            data: mydata,
+            success: function(data) {
+                swal("Generated OTP !", data.genrated_otp, "success");
+            },
+            error: function (data) {
+                swal("Error !", data.exception, "error");
+            }
+        });
+    });
+});
+</script>
+
+
+>>URL
+path('otp_delivery_agent/',views.otp_delivery_agent,name="otp_delivery_agent" ),
+
+
+>>VIEW
+#import generateOTP module
+import datetime
+from orderapp.modules.generateOTP import generateOTP
+def otp_delivery_agent(request): 
+    if request.method == "POST":
+        try:
+            #colling function generateOTP()
+            agent_id = request.POST.get('agent_id')
+            agent_id_otp = generateOTP.generateOTP()
+            insert_otp = delivery_agent_otp(
+                otp = agent_id_otp,
+                deliveryAgentId = agent_id,
+                deliveryAgentPhone = deliveryAgent.objects.get(pk=agent_id).phoneNumber,
+                status = "active",
+                expiryDate = datetime.datetime.combine(datetime.datetime.now()+datetime.timedelta(days=1), datetime.datetime.min.time())#exp_mid_night[2022-08-19 00:00:00]
+            )
+            genrated_otp = insert_otp.otp
+            insert_otp.save()          
+            return JsonResponse({'genrated_otp':genrated_otp}) 
+        except Exception as e:
+            return JsonResponse({'exception':'Failed to generate otp '+str(e)}) 
+
+##function generateOTP()
+# import library
+import math, random
+ 
+# function to generate OTP
+def generateOTP() :
+    ##FOR DIGITS
+    # Declare a digits variable 
+    # which stores all digits
+    digits = "123456789"
+    OTP = ""
+    length = len(digits) 
+    # length of password can be changed
+    # by changing value in range
+    for i in range(4) :
+        OTP += digits[math.floor(random.random() * length)]
+
+    # ##FOR STRINGS
+    # # Declare a string variable 
+    # # which stores all string
+    # string = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    # OTP = ""
+    # length = len(string)
+    # for i in range(6) :
+    #     OTP += string[math.floor(random.random() * length)]    
+ 
+    return OTP			
+			
